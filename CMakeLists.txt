@@ -33,5 +33,6 @@ project(pico C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-#add_subdirectory(pico_test)
+add_subdirectory(displaylib_16bit_PICO/library displaylib)
+
 add_subdirectory(starfield)
