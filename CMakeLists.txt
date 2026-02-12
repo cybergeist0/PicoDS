@@ -37,3 +37,4 @@ add_subdirectory(displaylib_16bit_PICO/library displaylib)
 
 add_subdirectory(graphing)
 add_subdirectory(starfield)
+add_subdirectory(game1)
