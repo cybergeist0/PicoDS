@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWM Music Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #4CAF50;
+        }
+
+        .controls {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-danger {
+            background: #f44336;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+        }
+
+        .btn-secondary:hover {
+            background: #0b7dda;
+        }
+
+        .setting {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting label {
+            font-size: 14px;
+        }
+
+        .setting input {
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #333;
+            color: #fff;
+            width: 80px;
+        }
+
+        .piano-roll {
+            background: #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: auto;
+            min-height: 600px;
+        }
+
+        .piano-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .piano-keys {
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #444;
+            flex-shrink: 0;
+            overflow-y: hidden;
+        }
+
+        .key {
+            height: 30px;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            min-width: 60px;
+        }
+
+        .key.white {
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        .key.black {
+            background: #1a1a1a;
+            color: #888;
+        }
+
+        .grid-canvas {
+            position: relative;
+            background: #2a2a2a;
+            flex: 1;
+            overflow: auto;
+            height: 100%;
+        }
+
+        canvas {
+            cursor: crosshair;
+            display: block;
+            position: relative;
+            z-index: 1;
+        }
+
+        #noteContainer {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 10 !important;
+        }
+
+        .note-block {
+            position: absolute;
+            background: #4CAF50;
+            border: 2px solid #45a049;
+            border-radius: 4px;
+            cursor: move;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            padding-left: 5px;
+            font-size: 11px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .note-block:hover {
+            opacity: 1;
+            z-index: 10;
+        }
+
+        .note-block.playing {
+            background: #FFC107;
+            border-color: #FFA000;
+        }
+
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 8px;
+            height: 100%;
+            cursor: ew-resize;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .export-area {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .export-area h3 {
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+
+        .export-area pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1px solid #444;
+        }
+
+        .info {
+            background: #2a2a2a;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        kbd {
+            background: #333;
+            border: 1px solid #666;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 12px;
+            display: inline-block;
+            margin: 0 2px;
+        }
+
+        .playhead {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #FF5722;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 PWM Music Editor</h1>
+        
+        <div class="info">
+            <strong>How to use:</strong> Click on the grid to add notes. Drag notes to move them. Drag the right edge to change duration. Right-click to delete. <br/>
+            <strong>Keyboard shortcuts:</strong> <kbd>P</kbd> = Play, <kbd>S</kbd> = Stop, <kbd>C</kbd> = Clear All, <kbd>E</kbd> = Export, <kbd>Delete</kbd> = Remove selected note
+        </div>
+
+        <div class="controls">
+            <button onclick="playMelody()">▶ Play <span style="opacity: 0.7; font-size: 12px;">(P)</span></button>
+            <button onclick="stopMelody()" class="btn-danger">⏹ Stop <span style="opacity: 0.7; font-size: 12px;">(S)</span></button>
+            <button onclick="clearAll()" class="btn-danger">🗑 Clear All <span style="opacity: 0.7; font-size: 12px;">(C)</span></button>
+            <button onclick="exportCode()" class="btn-secondary">📋 Export C++ Code <span style="opacity: 0.7; font-size: 12px;">(E)</span></button>
+            
+            <div class="setting">
+                <label>BPM:</label>
+                <input type="number" id="bpm" value="120" min="40" max="240">
+            </div>
+            
+            <div class="setting">
+                <label>Grid Size:</label>
+                <input type="number" id="gridSize" value="100" min="20" max="200" onchange="updateGrid()">
+            </div>
+        </div>
+
+        <div class="piano-roll">
+            <div class="piano-container">
+                <div class="piano-keys" id="pianoKeys"></div>
+                <div class="grid-canvas">
+                    <canvas id="gridCanvas"></canvas>
+                    <div id="noteContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+                    <div class="playhead" id="playhead"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="export-area">
+            <h3>C++ Code for AudioChannel:</h3>
+            <pre id="exportOutput">// Click "Export C++ Code" to generate...</pre>
+        </div>
+    </div>
+
+    <script>
+        // Note definitions matching the AudioChannel enum
+        const NOTES = [
+            'B6', 'AS6', 'A6', 'GS6', 'G6', 'FS6', 'F6', 'E6', 'DS6', 'D6', 'CS6', 'C6',
+            'B5', 'AS5', 'A5', 'GS5', 'G5', 'FS5', 'F5', 'E5', 'DS5', 'D5', 'CS5', 'C5',
+            'B4', 'AS4', 'A4', 'GS4', 'G4', 'FS4', 'F4', 'E4', 'DS4', 'D4', 'CS4', 'C4',
+            'B3', 'AS3', 'A3', 'GS3', 'G3', 'FS3', 'F3', 'E3', 'DS3', 'D3', 'CS3', 'C3'
+        ];
+
+        const NOTE_FREQUENCIES = {
+            'C3': 131, 'CS3': 139, 'D3': 147, 'DS3': 156, 'E3': 165, 'F3': 175, 'FS3': 185, 'G3': 196, 'GS3': 208, 'A3': 220, 'AS3': 233, 'B3': 247,
+            'C4': 262, 'CS4': 277, 'D4': 294, 'DS4': 311, 'E4': 330, 'F4': 349, 'FS4': 370, 'G4': 392, 'GS4': 415, 'A4': 440, 'AS4': 466, 'B4': 494,
+            'C5': 523, 'CS5': 554, 'D5': 587, 'DS5': 622, 'E5': 659, 'F5': 698, 'FS5': 740, 'G5': 784, 'GS5': 831, 'A5': 880, 'AS5': 932, 'B5': 988,
+            'C6': 1047, 'CS6': 1109, 'D6': 1175, 'DS6': 1245, 'E6': 1319, 'F6': 1397, 'FS6': 1480, 'G6': 1568, 'GS6': 1661, 'A6': 1760, 'AS6': 1865, 'B6': 1976
+        };
+
+        const ROW_HEIGHT = 30;
+        let gridSize = 100; // pixels per beat
+        const CANVAS_COLS = 32; // 32 beats = 8 measures of 4/4
+        let canvasWidth = CANVAS_COLS * gridSize;
+        let canvasHeight = NOTES.length * ROW_HEIGHT;
+
+        let notes = []; // Array of {note: 'C4', start: 0, duration: 100}
+        let isDragging = false;
+        let isResizing = false;
+        let dragNote = null;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragNoteStartX = 0;
+
+        // Web Audio API
+        let audioContext = null;
+        let isPlaying = false;
+        let playStartTime = 0;
+        let playScheduledNotes = [];
+
+        function initCanvas() {
+            const canvas = document.getElementById('gridCanvas');
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            
+            // Set grid-canvas to match canvas height
+            const gridCanvas = document.querySelector('.grid-canvas');
+            gridCanvas.style.height = canvasHeight + 'px';
+            
+            // Initialize piano keys
+            const pianoKeys = document.getElementById('pianoKeys');
+            pianoKeys.innerHTML = '';
+            NOTES.forEach(note => {
+                const keyDiv = document.createElement('div');
+                keyDiv.className = 'key ' + (note.includes('S') ? 'black' : 'white');
+                keyDiv.textContent = note;
+                pianoKeys.appendChild(keyDiv);
+            });
+
+            drawGrid();
+            setupCanvasEvents();
+        }
+
+        function drawGrid() {
+            const canvas = document.getElementById('gridCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw horizontal lines (notes)
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= NOTES.length; i++) {
+                const y = i * ROW_HEIGHT;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw vertical lines (beats)
+            for (let i = 0; i <= CANVAS_COLS; i++) {
+                const x = i * gridSize;
+                // Thicker lines for measures (every 4 beats)
+                ctx.strokeStyle = (i % 4 === 0) ? '#555' : '#333';
+                ctx.lineWidth = (i % 4 === 0) ? 2 : 1;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+        }
+
+        function setupCanvasEvents() {
+            const canvas = document.getElementById('gridCanvas');
+            const container = document.getElementById('noteContainer');
+            
+            container.addEventListener('mousedown', (e) => {
+                // Check if clicking on a note block (don't add a new note)
+                if (e.target.className === 'note-block' || e.target.className === 'resize-handle') {
+                    return;
+                }
+                
+                const canvasRect = canvas.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const x = e.clientX - containerRect.left;
+                const y = e.clientY - containerRect.top;
+                
+                // Snap to grid
+                const col = Math.floor(x / gridSize);
+                const row = Math.floor(y / ROW_HEIGHT);
+                
+                if (row >= 0 && row < NOTES.length && col >= 0 && col < CANVAS_COLS) {
+                    const note = NOTES[row];
+                    const start = col * gridSize;
+                    
+                    // Add new note
+                    const newNote = {
+                        note: note,
+                        start: start,
+                        duration: gridSize // default 1 beat
+                    };
+                    notes.push(newNote);
+                    renderNotes();
+                }
+            });
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('noteContainer');
+            container.innerHTML = '';
+            
+            notes.forEach((note, index) => {
+                const noteDiv = document.createElement('div');
+                noteDiv.className = 'note-block';
+                noteDiv.style.left = note.start + 'px';
+                noteDiv.style.top = (NOTES.indexOf(note.note) * ROW_HEIGHT + 2) + 'px';
+                noteDiv.style.width = note.duration + 'px';
+                noteDiv.style.height = (ROW_HEIGHT - 4) + 'px';
+                noteDiv.textContent = note.note;
+                noteDiv.dataset.index = index;
+                
+                // Add resize handle
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                noteDiv.appendChild(resizeHandle);
+                
+                // Drag to move
+                noteDiv.addEventListener('mousedown', (e) => {
+                    if (e.target.className === 'resize-handle') {
+                        // Resize mode
+                        isResizing = true;
+                        dragNote = note;
+                        dragStartX = e.clientX;
+                        e.stopPropagation();
+                    } else if (e.button === 0) {
+                        // Move mode
+                        isDragging = true;
+                        dragNote = note;
+                        dragStartX = e.clientX;
+                        dragStartY = e.clientY;
+                        dragNoteStartX = note.start;
+                        e.stopPropagation();
+                    }
+                });
+                
+                // Right click to delete
+                noteDiv.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    notes.splice(index, 1);
+                    renderNotes();
+                });
+                
+                container.appendChild(noteDiv);
+            });
+        }
+
+        // Global mouse handlers for dragging
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging && dragNote) {
+                const dx = e.clientX - dragStartX;
+                const dy = e.clientY - dragStartY;
+                
+                // Snap to grid
+                const newStart = Math.max(0, Math.min(dragNoteStartX + Math.round(dx / gridSize) * gridSize, canvasWidth - dragNote.duration));
+                const newRow = Math.max(0, Math.min(NOTES.length - 1, NOTES.indexOf(dragNote.note) + Math.round(dy / ROW_HEIGHT)));
+                
+                dragNote.start = newStart;
+                dragNote.note = NOTES[newRow];
+                renderNotes();
+            } else if (isResizing && dragNote) {
+                const dx = e.clientX - dragStartX;
+                const newDuration = Math.max(gridSize / 4, dragNote.duration + Math.round(dx / (gridSize / 4)) * (gridSize / 4));
+                
+                if (dragNote.start + newDuration <= canvasWidth) {
+                    dragNote.duration = newDuration;
+                    dragStartX = e.clientX;
+                    renderNotes();
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            isResizing = false;
+            dragNote = null;
+        });
+
+        function playMelody() {
+            if (notes.length === 0) {
+                alert('Add some notes first!');
+                return;
+            }
+            
+            stopMelody();
+            
+            // Initialize Web Audio API
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            isPlaying = true;
+            playStartTime = audioContext.currentTime;
+            const bpm = parseInt(document.getElementById('bpm').value);
+            const secondsPerPixel = (60 / bpm) / gridSize; // seconds per pixel
+            
+            // Sort notes by start time
+            const sortedNotes = [...notes].sort((a, b) => a.start - b.start);
+            
+            // Schedule all notes
+            sortedNotes.forEach(note => {
+                const startTime = playStartTime + (note.start * secondsPerPixel);
+                const duration = note.duration * secondsPerPixel;
+                
+                playNote(NOTE_FREQUENCIES[note.note], startTime, duration, note);
+            });
+            
+            // Calculate total duration (end of last note)
+            const lastNote = sortedNotes[sortedNotes.length - 1];
+            const totalDuration = (lastNote.start + lastNote.duration) * secondsPerPixel;
+            
+            // Animate playhead
+            animatePlayhead(totalDuration);
+            
+            // Stop after melody finishes
+            setTimeout(() => {
+                stopMelody();
+            }, totalDuration * 1000 + 100);
+        }
+
+        function playNote(frequency, startTime, duration, noteData) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'square'; // PWM-like sound
+            oscillator.frequency.setValueAtTime(frequency, startTime);
+            
+            gainNode.gain.setValueAtTime(0.3, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+            
+            // Visual feedback
+            if (noteData) {
+                setTimeout(() => {
+                    highlightNote(noteData, true);
+                }, (startTime - audioContext.currentTime) * 1000);
+                
+                setTimeout(() => {
+                    highlightNote(noteData, false);
+                }, (startTime + duration - audioContext.currentTime) * 1000);
+            }
+        }
+
+        function highlightNote(noteData, highlight) {
+            const index = notes.indexOf(noteData);
+            if (index !== -1) {
+                const noteBlocks = document.querySelectorAll('.note-block');
+                if (noteBlocks[index]) {
+                    if (highlight) {
+                        noteBlocks[index].classList.add('playing');
+                    } else {
+                        noteBlocks[index].classList.remove('playing');
+                    }
+                }
+            }
+        }
+
+        function animatePlayhead(totalDuration) {
+            const playhead = document.getElementById('playhead');
+            playhead.style.display = 'block';
+            playhead.style.left = '0px';
+            
+            function animate() {
+                if (!isPlaying) {
+                    playhead.style.display = 'none';
+                    return;
+                }
+                
+                // Use audioContext.currentTime to sync with actual note playback
+                const elapsed = audioContext.currentTime - playStartTime;
+                
+                if (elapsed <= totalDuration) {
+                    const pixelsPerSecond = canvasWidth / totalDuration;
+                    playhead.style.left = (elapsed * pixelsPerSecond) + 'px';
+                    requestAnimationFrame(animate);
+                } else {
+                    playhead.style.display = 'none';
+                }
+            }
+            
+            animate();
+        }
+
+        function stopMelody() {
+            isPlaying = false;
+            const playhead = document.getElementById('playhead');
+            playhead.style.display = 'none';
+            
+            // Remove all playing highlights
+            document.querySelectorAll('.note-block.playing').forEach(block => {
+                block.classList.remove('playing');
+            });
+        }
+
+        function exportCode() {
+            if (notes.length === 0) {
+                alert('Add some notes first!');
+                return;
+            }
+            
+            const bpm = parseInt(document.getElementById('bpm').value);
+            const beatDuration = (60 / bpm) * 1000; // ms per beat
+            
+            // Sort notes by start time
+            const sortedNotes = [...notes].sort((a, b) => a.start - b.start);
+            
+            // Generate arrays
+            let notesArray = 'const Note melody_notes[] = {\n    ';
+            let durationsArray = 'const uint melody_durations[] = {\n    ';
+            
+            sortedNotes.forEach((note, i) => {
+                const durationMs = Math.round((note.duration / gridSize) * beatDuration);
+                
+                notesArray += `Note::${note.note}`;
+                durationsArray += durationMs;
+                
+                if (i < sortedNotes.length - 1) {
+                    notesArray += ', ';
+                    durationsArray += ', ';
+                }
+                
+                // Line break every 8 notes
+                if ((i + 1) % 8 === 0 && i < sortedNotes.length - 1) {
+                    notesArray += '\n    ';
+                    durationsArray += '\n    ';
+                }
+            });
+            
+            notesArray += '\n};';
+            durationsArray += '\n};';
+            
+            const length = sortedNotes.length;
+            const usage = `\n// Usage:\naudio.playMelody(melody_notes, melody_durations, ${length});`;
+            
+            const code = notesArray + '\n\n' + durationsArray + '\n' + usage;
+            
+            document.getElementById('exportOutput').textContent = code;
+        }
+
+        function clearAll() {
+            if (confirm('Clear all notes?')) {
+                notes = [];
+                renderNotes();
+            }
+        }
+
+        function updateGrid() {
+            gridSize = parseInt(document.getElementById('gridSize').value);
+            canvasWidth = CANVAS_COLS * gridSize;
+            
+            // Update note positions proportionally
+            notes.forEach(note => {
+                note.start = Math.round(note.start / gridSize) * gridSize;
+                note.duration = Math.round(note.duration / gridSize) * gridSize;
+            });
+            
+            initCanvas();
+            renderNotes();
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger shortcuts if user is typing in an input
+            if (e.target.tagName === 'INPUT') return;
+            
+            const key = e.key.toLowerCase();
+            
+            if (key === 'p' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                playMelody();
+            } else if (key === 's' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                stopMelody();
+            } else if (key === 'c' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                clearAll();
+            } else if (key === 'e' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                exportCode();
+            } else if (key === 'delete') {
+                // Delete selected notes with Delete key
+                e.preventDefault();
+                if (dragNote) {
+                    const index = notes.indexOf(dragNote);
+                    if (index !== -1) {
+                        notes.splice(index, 1);
+                        dragNote = null;
+                        renderNotes();
+                    }
+                }
+            }
+        });
+
+        // Initialize on load
+        window.onload = () => {
+            initCanvas();
+            renderNotes();
+        };
+    </script>
+</body>
+</html>

@@ -10,7 +10,7 @@
 #define MAX_COINS 5
 #define MAX_ASTEROIDS 10
 #define COIN_SPAWN_INTERVAL_MS 400
-#define ASTEROID_SPAWN_INTERVAL_MS 600
+#define ASTEROID_SPAWN_INTERVAL_MS 50
 
 struct FallingObject {
     Sprite* sprite;
@@ -26,7 +26,7 @@ private:
     std::vector<FallingObject> silverCoins;
     std::vector<FallingObject> asteroids;
 
-    static constexpr int SILVER_COIN_MOVE_SPEED = 5;
+    static constexpr int SILVER_COIN_MOVE_SPEED = 0;
     static constexpr int ASTEROID_MOVE_SPEED = 10;
     static constexpr int PLAYER_MOVE_SPEED = 5;
     static constexpr float GRAVITY = 0.3f;
